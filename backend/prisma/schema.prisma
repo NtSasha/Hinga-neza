@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model admin_logs {
+  id         Int       @id @default(autoincrement())
+  admin_id   String?   @db.Uuid
+  action     String?   @db.VarChar(100)
+  created_at DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  users      users?    @relation(fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model alerts {
+  id            Int       @id @default(autoincrement())
+  alert_type    String?   @db.VarChar(50)
+  message       String?
+  language      String?   @default("English") @db.VarChar(20)
+  target_region String?   @db.VarChar(100)
+  created_at    DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+}
+
+model banks {
+  id                Int                 @id @default(autoincrement())
+  bank_name         String?             @db.VarChar(100)
+  contact_email     String?             @db.VarChar(100)
+  contact_phone     String?             @db.VarChar(20)
+  loan_applications loan_applications[]
+}
+
+model crop_disease_reports {
+  id               Int       @id @default(autoincrement())
+  farmer_id        Int?
+  image_url        String?
+  crop_id          Int?
+  disease_detected String?   @db.VarChar(100)
+  confidence_score Decimal?  @db.Decimal
+  recommendation   String?
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+  crops            crops?    @relation(fields: [crop_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmers          farmers?  @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model crops {
+  id                   Int                    @id @default(autoincrement())
+  crop_name            String                 @db.VarChar(100)
+  scientific_name      String?                @db.VarChar(100)
+  category             String?                @db.VarChar(50)
+  created_at           DateTime?              @default(dbgenerated("CURRENT_DATE")) @db.Date
+  crop_disease_reports crop_disease_reports[]
+  market_listings      market_listings[]
+  plantings            plantings[]
+}
+
+model farmers {
+  id                   Int                    @id @default(autoincrement())
+  user_id              String?                @unique @db.Uuid
+  national_id          String?                @unique @db.VarChar(20)
+  district             String?                @db.VarChar(100)
+  sector               String?                @db.VarChar(100)
+  cell                 String?                @db.VarChar(100)
+  village              String?                @db.VarChar(100)
+  farm_size_hectares   Decimal?               @db.Decimal
+  gps_latitude         Decimal?               @db.Decimal
+  gps_longitude        Decimal?               @db.Decimal
+  created_at           DateTime?              @default(dbgenerated("CURRENT_DATE")) @db.Date
+  updated_at           DateTime?              @default(dbgenerated("CURRENT_DATE")) @db.Date
+  crop_disease_reports crop_disease_reports[]
+  users                users?                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farms                farms[]
+  loan_applications    loan_applications[]
+  market_listings      market_listings[]
+}
+
+model farms {
+  id                 Int         @id @default(autoincrement())
+  farmer_id          Int?
+  farm_name          String?     @db.VarChar(100)
+  location_lat       Decimal?    @db.Decimal
+  location_long      Decimal?    @db.Decimal
+  soil_type          String?     @db.VarChar(50)
+  farm_size_hectares Decimal?    @db.Decimal
+  created_at         DateTime?   @default(dbgenerated("CURRENT_DATE")) @db.Date
+  updated_at         DateTime?   @default(dbgenerated("CURRENT_DATE")) @db.Date
+  farmers            farmers?    @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  plantings          plantings[]
+}
+
+model fertilizer_usage {
+  id               Int          @id @default(autoincrement())
+  planting_id      Int?
+  fertilizer_id    Int?
+  quantity_used    Decimal?     @db.Decimal
+  application_date DateTime?    @db.Date
+  fertilizers      fertilizers? @relation(fields: [fertilizer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  plantings        plantings?   @relation(fields: [planting_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model fertilizers {
+  id               Int                @id @default(autoincrement())
+  fertilizer_name  String             @db.VarChar(100)
+  type             String?            @db.VarChar(50)
+  fertilizer_usage fertilizer_usage[]
+}
+
+model harvests {
+  id               Int        @id @default(autoincrement())
+  planting_id      Int?
+  harvest_date     DateTime?  @db.Date
+  quantity_kg      Decimal?   @db.Decimal
+  quality_grade    String?    @db.VarChar(50)
+  storage_location String?    @db.VarChar(100)
+  created_at       DateTime?  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  plantings        plantings? @relation(fields: [planting_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model loan_applications {
+  id                 Int       @id @default(autoincrement())
+  farmer_id          Int?
+  bank_id            Int?
+  loan_amount        Decimal?  @db.Decimal
+  loan_purpose       String?
+  application_status String?   @default("pending") @db.VarChar(20)
+  application_date   DateTime? @default(now()) @db.Timestamp(6)
+  banks              banks?    @relation(fields: [bank_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmers            farmers?  @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model market_listings {
+  id                 Int       @id @default(autoincrement())
+  farmer_id          Int?
+  crop_id            Int?
+  quantity_available Decimal?  @db.Decimal
+  price_per_kg       Decimal?  @db.Decimal
+  status             String?   @default("available") @db.VarChar(20)
+  created_at         DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  crops              crops?    @relation(fields: [crop_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmers            farmers?  @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sales              sales[]
+}
+
+model plantings {
+  id                    Int                 @id @default(autoincrement())
+  farm_id               Int?
+  crop_id               Int?
+  planting_date         DateTime?           @db.Date
+  expected_harvest_date DateTime?           @db.Date
+  area_hectares         Decimal?            @db.Decimal
+  season                String?             @db.VarChar(50)
+  notes                 String?
+  created_at            DateTime?           @default(dbgenerated("CURRENT_DATE")) @db.Date
+  fertilizer_usage      fertilizer_usage[]
+  harvests              harvests[]
+  crops                 crops?              @relation(fields: [crop_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farms                 farms?              @relation(fields: [farm_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  yield_predictions     yield_predictions[]
+}
+
+model roles {
+  id        Int     @id @default(autoincrement())
+  role_name String  @unique @db.VarChar(50)
+  users     users[]
+}
+
+model sales {
+  id              Int              @id @default(autoincrement())
+  listing_id      Int?
+  buyer_id        String?          @db.Uuid
+  quantity_sold   Decimal?         @db.Decimal
+  total_price     Decimal?         @db.Decimal
+  sale_date       DateTime?        @default(now()) @db.Timestamp(6)
+  users           users?           @relation(fields: [buyer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  market_listings market_listings? @relation(fields: [listing_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model sms_notifications {
+  id           Int       @id @default(autoincrement())
+  user_id      String?   @db.Uuid
+  phone_number String?   @db.VarChar(20)
+  message      String?
+  status       String?   @default("pending") @db.VarChar(20)
+  sent_at      DateTime? @db.Timestamp(6)
+  users        users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model users {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  full_name           String              @db.VarChar(100)
+  phone_number        String?             @unique @db.VarChar(20)
+  email               String?             @unique @db.VarChar(100)
+  password_hash       String
+  role_id             Int?
+  language_preference String?             @default("English") @db.VarChar(20)
+  account_status      String?             @default("active") @db.VarChar(20)
+  created_at          DateTime?           @default(dbgenerated("CURRENT_DATE")) @db.Date
+  updated_at          DateTime?           @default(dbgenerated("CURRENT_DATE")) @db.Date
+  admin_logs          admin_logs[]
+  farmers             farmers?
+  sales               sales[]
+  sms_notifications   sms_notifications[]
+  roles               roles?              @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model weather_forecasts {
+  id                Int       @id @default(autoincrement())
+  location          String?   @db.VarChar(100)
+  forecast_date     DateTime? @db.Date
+  temperature       Decimal?  @db.Decimal
+  rainfall          Decimal?  @db.Decimal
+  humidity          Decimal?  @db.Decimal
+  weather_condition String?   @db.VarChar(50)
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model yield_predictions {
+  id                          Int        @id @default(autoincrement())
+  planting_id                 Int?
+  predicted_yield_per_hectare Decimal?   @db.Decimal
+  model_version               String?    @db.VarChar(50)
+  prediction_date             DateTime?  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  plantings                   plantings? @relation(fields: [planting_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
